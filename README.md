@@ -22,8 +22,7 @@ s3://datalake-bucket-turma-c-trabalho-mba/
 
 Cada execução recebe um `ingest_date` e um `batch_id`. A ingestão grava em
 Transient e promove uma cópia verificada para Bronze. Athena lê Bronze para
-materializar Silver e Gold em Parquet/Snappy. `raw/` e `processed/` não fazem
-parte do bucket ativo. O bucket anterior foi removido após validar o novo.
+materializar Silver e Gold em Parquet/Snappy.
 
 Transient não tem política Lifecycle configurada; configure retenção antes de
 esperar limpeza automática.
@@ -98,8 +97,7 @@ python mba_setup_ambiente.py \
 O setup executa as etapas abaixo em sequência e para na primeira falha:
 
 1. Verifica o bucket e cria somente prefixes ausentes.
-2. Copia arquivos Raw existentes para Bronze com `batch_id=legacy`; se não
-  houver Raw, não copia nada.
+2. Prepara a Bronze para incorporar entradas disponíveis antes da carga atual.
 3. Gera clientes, produtos, pedidos e o arquivo auxiliar `orders.csv` em
   `datalake/Dados/`.
 4. Envia clientes, produtos e pedidos para Transient, confere o tamanho e
@@ -116,21 +114,18 @@ O setup executa as etapas abaixo em sequência e para na primeira falha:
 
 Ao final, os artefatos esperados são:
 
-- quatro arquivos locais: clientes, pedidos, produtos e `orders.csv` auxiliar;
-- os três arquivos de ingestão em Transient e suas cópias em Bronze;
-- três tabelas Bronze registradas no Glue Data Catalog;
-- CSV auxiliar de Silver e Quarentena no workspace;
-- JSON de rejeições em S3, quando houver registros inválidos;
-- tabelas e arquivos Parquet/Snappy de Silver e Gold no S3;
-- resultados, metadados e manifests das queries em `athena-results/`.
+- arquivos de clientes, pedidos e produtos gerados para o lote;
+- objetos de entrada em Transient e suas cópias verificadas em Bronze;
+- tabelas Bronze no Glue Data Catalog;
+- staging CSV de Silver e Quarentena no workspace;
+- rejeitados em JSON no S3, quando houver registros inválidos;
+- Silver e Gold em Parquet/Snappy, com partições do lote;
+- resultados, metadados e manifests das consultas em `athena-results/`.
 
 O arquivo `orders.csv` não é enviado para S3. A validação de IDs, a checagem de
 quantidade positiva e a contagem de rejeições são feitas pelo módulo Python de
 Data Quality; a materialização SQL da Silver repete os filtros e joins lendo
 as tabelas Bronze no Athena.
-
-O bucket anterior já foi removido; o bucket acima é o destino ativo. Em
-reexecuções, o setup cria novos lotes e não apaga objetos existentes.
 
 O setup não remove objetos em reexecuções. Ele recria os metadados Athena de
 Silver e Gold para o schema particionado atual e mantém o `OutputLocation`
@@ -148,7 +143,7 @@ python -m pytest -q proximas_etapas/scripts
 
 A suíte contém 24 casos e cobre regras de qualidade, transformação de registros,
 gravação de Silver/Quarentena, builders SQL, partições, promoção Transient→Bronze,
-validação de IDs gerados, migração Raw idempotente e a ordem Silver→Gold→auditoria.
+validação de IDs gerados, importação idempotente e a ordem Silver→Gold→auditoria.
 Os testes que simulam S3 usam clientes fake; pytest não escreve no AWS. São
 testes unitários e de integração local entre geradores, DQ, ingestão e
 orquestração, não uma execução AWS.
@@ -231,7 +226,6 @@ dados e persiste os resultados das próprias queries.
 | `datalake/Dados/mba_base_pedidos.py` | `gerar_pedidos` | Gera pedidos e garante ao menos um par de IDs válido. |
 | `datalake/Dados/mba_base_order.py` | `gerar_data`, `gerar_orders` | Gera `orders.csv`, auxiliar e fora da ingestão. |
 | `datalake/mba_create_bucket_env.py` | `client`, `ensure_environment` | Cria o bucket, se ausente, e apenas prefixes ausentes. |
-| `datalake/mba_migrar_raw_para_bronze.py` | `client`, `migrate_raw_to_bronze` | Copia dados Raw legados para Bronze sem apagar a origem. |
 | `datalake/mba_ingestao_env.py` | `client`, `ingest_data_files` | Grava Transient, verifica tamanho e promove cópia para Bronze. |
 | `datalake/mba_configurar_output_athena.py` | `client`, `ensure_output` | Configura o output do workgroup `primary` se necessário. |
 | `datalake/mba_setup_athena.py` | `client`, `execute`, `setup_catalog` | Cria tabelas Bronze e atualiza partições/metadados. |
@@ -243,19 +237,3 @@ dados e persiste os resultados das próprias queries.
 | `mba_auditar_athena.py` | `executar_query`, `obter_resultados`, `main` | Audita tabelas, contagens e totais do lote. |
 | `mba_validar_camadas_athena.py` | `executar_query`, `obter_resultados`, `main` | Valida cálculo Silver e equivalência Silver/Gold. |
 | `mba_analise_athena.py` | `executar_query`, `obter_resultados`, `main` | Executa consultas analíticas opcionais em Bronze. |
-
-## Segurança antes de publicar
-
-- `AWS_CREDENTIAL` foi removido do tracking atual e ignorado; a cópia local
-  permanece para o ambiente. Rotacione as credenciais antes da publicação:
-  o caminho já existiu no histórico Git interno.
-- O identificador antigo do bucket também aparece no histórico. O histórico
-  não foi reescrito nesta preparação; não publique os commits antigos sem
-  primeiro planejar a limpeza de histórico e seus efeitos no remoto.
-- `datalake/` foi convertido de gitlink para uma pasta normal do repositório
-  único. Nenhuma publicação ou push foi feito.
-
-Os demais arquivos Markdown e os dados CSV locais continuam disponíveis no
-workspace, mas foram retirados do conjunto rastreado/publicável.
-
-O ambiente AWS foi migrado e testado. A publicação no GitHub não foi executada.
