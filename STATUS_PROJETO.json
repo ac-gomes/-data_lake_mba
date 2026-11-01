@@ -1,0 +1,53 @@
+{
+  "projeto": "Data Lake MBA - Arquitetura Medallion",
+  "atualizado_em": "2026-11-01",
+  "status": "APROVADO - pipeline executado e validado no AWS",
+  "bucket_ativo": "datalake-bucket-turma-c-trabalho-mba",
+  "bucket_anterior": "removido apos validacao do novo ambiente",
+  "execucao": {
+    "data_ingestao": "2026-11-01",
+    "batch_id": "20261101T185847881533",
+    "etapas_concluidas": 11,
+    "etapas_total": 11
+  },
+  "validacoes": {
+    "remota": "6/6",
+    "auditoria_athena": "6/6",
+    "testes_locais": "24 passed",
+    "validacao_silver_gold": "passou",
+    "validacao_quarentena_s3": "98 registros confirmados"
+  },
+  "camadas": {
+    "bronze_pedidos": 100,
+    "silver_pedidos_validos": 2,
+    "gold_agregacoes": 2,
+    "pedidos_quarentena": 98,
+    "faturamento_bronze": 1328698.0,
+    "faturamento_silver": 50121.36,
+    "faturamento_gold": 50121.36
+  },
+  "s3": {
+    "transient": "transient/<entidade>/ingest_date=<data>/batch_id=<id>/",
+    "bronze": "bronze/<entidade>/ingest_date=<data>/batch_id=<id>/",
+    "silver": "silver/fato_vendas/ingest_date=<data>/batch_id=<id>/",
+    "gold": "gold/analises_vendas/ingest_date=<data>/batch_id=<id>/",
+    "quarantine": "quarantine/pedidos_rejeitados/ingest_date=<data>/batch_id=<id>/",
+    "athena_results": "athena-results/",
+    "transient_lifecycle": "nao configurado"
+  },
+  "athena": {
+    "database": "catalog_db_athena_bucket_turma_c_trabalho_mba",
+    "tabelas": [
+      "bronze_clientes",
+      "bronze_pedidos",
+      "bronze_produtos",
+      "silver_fato_vendas",
+      "gold_analises_vendas"
+    ]
+  },
+  "seguranca_github": {
+    "AWS_CREDENTIAL": "removido do tracking atual; arquivo local preservado",
+    "rotacao_credenciais": "necessaria antes de publicar",
+    "historico_git": "nao reescrito"
+  }
+}

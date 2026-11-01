@@ -1,0 +1,15 @@
+# Local credentials
+.env
+AWS_CREDENTIAL
+AWS_CREDENTIAL.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Generated local datasets
+Dados/clientes.json
+Dados/pedidos.csv
+Dados/produtos.csv
+Dados/orders.csv

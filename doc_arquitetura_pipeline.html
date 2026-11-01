@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Arquitetura medalhão do Data Lake MBA: Transient, Bronze, Silver e Gold.">
+  <title>Data Lake MBA | Arquitetura Medalhão</title>
+  <style>
+    :root {
+      --ink: #1d2b27;
+      --muted: #56655f;
+      --line: #cbd5ce;
+      --paper: #f2f5f0;
+      --surface: #fbfcf9;
+      --teal: #176b68;
+      --bronze: #82552b;
+      --silver: #506a78;
+      --gold: #8b650e;
+      --red: #943d38;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(29, 43, 39, .025) 32px);
+      font: 16px/1.55 "Avenir Next", "Trebuchet MS", sans-serif;
+    }
+    a { color: inherit; }
+    code, pre { font-family: "SFMono-Regular", Consolas, monospace; }
+    code { color: #234f4a; overflow-wrap: anywhere; }
+    main { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 32px 0 64px; }
+    header { padding: 26px 0 30px; border-bottom: 1px solid var(--line); }
+    .eyebrow { margin: 0 0 8px; color: var(--teal); font-size: 13px; font-weight: 700; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 760px; margin-bottom: 10px; font: 42px/1.08 Georgia, serif; }
+    .lede { max-width: 760px; margin-bottom: 20px; color: var(--muted); }
+    .status { display: inline-flex; gap: 9px; align-items: center; padding: 7px 10px; border: 1px solid #b5c5b7; background: #e7efe6; color: #294d37; font-size: 13px; font-weight: 700; }
+    .status::before { width: 8px; height: 8px; border-radius: 50%; background: #54845c; content: ""; }
+    nav { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 24px; font-size: 14px; }
+    nav a { text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    section { padding: 32px 0; border-bottom: 1px solid var(--line); }
+    h2 { margin-bottom: 8px; font: 28px/1.2 Georgia, serif; }
+    .section-lede { max-width: 760px; margin-bottom: 22px; color: var(--muted); }
+    .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px; margin: 26px 0 18px; }
+    .layer { position: relative; min-height: 150px; padding: 16px 14px; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--layer-color); }
+    .layer:not(:last-child)::after { position: absolute; top: 50%; right: -21px; width: 12px; height: 12px; border-top: 2px solid #7d8c84; border-right: 2px solid #7d8c84; transform: rotate(45deg); content: ""; }
+    .layer-index { display: block; margin-bottom: 15px; color: var(--layer-color); font: 700 12px/1 "SFMono-Regular", Consolas, monospace; }
+    .layer h3 { margin-bottom: 6px; color: var(--layer-color); font-size: 19px; }
+    .layer p { margin-bottom: 0; color: var(--muted); font-size: 14px; }
+    .transient { --layer-color: var(--teal); }
+    .bronze { --layer-color: var(--bronze); }
+    .silver { --layer-color: var(--silver); }
+    .gold { --layer-color: var(--gold); }
+    .source { --layer-color: #3e5549; }
+    .side-areas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .side-area { padding: 14px 0 0; border-top: 2px solid var(--area-color); }
+    .side-area h3 { margin-bottom: 5px; color: var(--area-color); font-size: 16px; }
+    .side-area p { margin-bottom: 0; color: var(--muted); font-size: 14px; }
+    .quarantine { --area-color: var(--red); }
+    .results { --area-color: var(--teal); }
+    .layout { display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; align-items: start; }
+    pre { margin: 0; padding: 18px; overflow-x: auto; background: #202c29; color: #edf2eb; font-size: 13px; line-height: 1.65; }
+    pre code { color: inherit; }
+    .notes { display: grid; gap: 16px; }
+    .note { padding-left: 14px; border-left: 3px solid var(--note-color); }
+    .note h3 { margin-bottom: 4px; color: var(--note-color); font-size: 16px; }
+    .note p { margin-bottom: 0; color: var(--muted); font-size: 14px; }
+    .bronze-note { --note-color: var(--bronze); }
+    .silver-note { --note-color: var(--silver); }
+    .gold-note { --note-color: var(--gold); }
+    .pipeline { display: grid; grid-template-columns: 52px 1fr; gap: 10px 16px; max-width: 850px; margin: 22px 0 0; }
+    .step { color: var(--teal); font: 700 13px/1.5 "SFMono-Regular", Consolas, monospace; }
+    .step-copy { color: var(--muted); }
+    .step-copy strong { color: var(--ink); }
+    .command { margin-top: 22px; }
+    .validation { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-top: 20px; padding: 16px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .validation strong { color: var(--ink); }
+    .validation span { color: var(--muted); }
+    footer { padding-top: 22px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 850px) {
+      .flow { grid-template-columns: 1fr; gap: 12px; }
+      .layer { min-height: 0; }
+      .layer-index { margin-bottom: 8px; }
+      .layer:not(:last-child)::after { top: auto; right: 50%; bottom: -8px; transform: translateX(50%) rotate(135deg); }
+      .side-areas { grid-template-columns: 1fr; gap: 16px; }
+      .layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+      main { width: min(100% - 28px, 1120px); padding-top: 20px; }
+      h1 { font-size: 34px; }
+      h2 { font-size: 24px; }
+      nav { gap: 12px 16px; }
+      pre { padding: 14px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">DATA LAKE MBA / ARQUITETURA</p>
+      <h1>Transient, Bronze, Silver, Gold</h1>
+      <p class="lede">Camadas de armazenamento, qualidade e consumo analítico no Amazon S3 e Athena.</p>
+      <span class="status">Executado no AWS em 2026-11-01</span>
+      <nav aria-label="Seções do documento">
+        <a href="#camadas">Camadas</a>
+        <a href="#storage">Storage</a>
+        <a href="#execucao">Execução</a>
+        <a href="#validacao">Validação</a>
+      </nav>
+    </header>
+
+    <section id="camadas">
+      <h2>Fluxo de dados</h2>
+      <p class="section-lede">Cada execução recebe uma data de ingestão e um identificador de lote compartilhado entre Bronze, Silver, Gold e Quarentena.</p>
+      <div class="flow" aria-label="Origem, Transient, Bronze, Silver e Gold">
+        <article class="layer source">
+          <span class="layer-index">ORIGEM</span>
+          <h3>Arquivos locais</h3>
+          <p>Arquivos de clientes, pedidos e produtos recebidos pelo pipeline.</p>
+        </article>
+        <article class="layer transient">
+          <span class="layer-index">01 / STAGING</span>
+          <h3>Transient</h3>
+          <p>Recebe os objetos do lote antes da promoção. Não há expiração automática configurada.</p>
+        </article>
+        <article class="layer bronze">
+          <span class="layer-index">02 / FONTE</span>
+          <h3>Bronze</h3>
+          <p>Cópia durável, sem transformação; é a origem das tabelas Athena Bronze.</p>
+        </article>
+        <article class="layer silver">
+          <span class="layer-index">03 / TRATADA</span>
+          <h3>Silver</h3>
+          <p>Pedidos válidos enriquecidos com cliente e produto, em Parquet/Snappy.</p>
+        </article>
+        <article class="layer gold">
+          <span class="layer-index">04 / CONSUMO</span>
+          <h3>Gold</h3>
+          <p>Agregação por UF e categoria, em Parquet/Snappy.</p>
+        </article>
+      </div>
+      <div class="side-areas">
+        <article class="side-area quarantine">
+          <h3>Quarentena</h3>
+          <p>Registros recusados pelo DQ, particionados por data e lote; ficam fora das quatro camadas.</p>
+        </article>
+        <article class="side-area results">
+          <h3>Resultados Athena</h3>
+          <p><code>athena-results/</code> guarda resultados de consulta, não dados da camada Gold.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="storage">
+      <h2>Estrutura S3</h2>
+      <p class="section-lede">Os dados são organizados por entidade, data de ingestão e identificador do lote.</p>
+      <div class="layout">
+        <pre><code>s3://datalake-bucket-turma-c-trabalho-mba/
+├── transient/&lt;entidade&gt;/ingest_date=AAAA-MM-DD/batch_id=&lt;id&gt;/
+├── bronze/&lt;entidade&gt;/ingest_date=AAAA-MM-DD/batch_id=&lt;id&gt;/
+├── silver/fato_vendas/ingest_date=.../batch_id=.../
+├── gold/analises_vendas/ingest_date=.../batch_id=.../
+├── quarantine/pedidos_rejeitados/ingest_date=.../batch_id=.../
+└── athena-results/</code></pre>
+        <div class="notes">
+          <article class="note bronze-note">
+            <h3>Promoção verificada</h3>
+            <p>A ingestão compara o tamanho do objeto em Transient e Bronze antes de considerar o lote promovido.</p>
+          </article>
+          <article class="note silver-note">
+            <h3>Catálogo particionado</h3>
+            <p>Bronze, Silver e Gold usam <code>ingest_date</code> e <code>batch_id</code>. A auditoria recebe o lote para não misturar execuções.</p>
+          </article>
+          <article class="note gold-note">
+            <h3>Retenção pendente</h3>
+            <p>Transient permanece após a promoção. Defina uma política Lifecycle no S3 antes de ativar limpeza automática.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="execucao">
+      <h2>Orquestração</h2>
+      <p class="section-lede">O setup executa onze passos, interrompe na primeira falha e compartilha o mesmo lote em todas as etapas.</p>
+      <div class="pipeline">
+        <span class="step">01–04</span><div class="step-copy"><strong>Preparar e ingerir.</strong> Criar prefixes, gerar os arquivos e carregar o lote em Transient e Bronze.</div>
+        <span class="step">05–07</span><div class="step-copy"><strong>Preparar catálogo.</strong> Preservar o OutputLocation, registrar tabelas Bronze e validar recursos remotos.</div>
+        <span class="step">08</span><div class="step-copy"><strong>Aplicar DQ.</strong> Validar registros e publicar rejeições em Quarentena.</div>
+        <span class="step">09–10</span><div class="step-copy"><strong>Materializar.</strong> Athena lê Bronze para gerar Silver e Gold em partições próprias.</div>
+        <span class="step">11</span><div class="step-copy"><strong>Auditar.</strong> Conferir o lote atual no Athena.</div>
+      </div>
+      <div class="command">
+        <strong>Executar o setup</strong>
+        <pre><code>python mba_setup_ambiente.py \
+  --bucket datalake-bucket-turma-c-trabalho-mba \
+  --quantidade 100</code></pre>
+      </div>
+    </section>
+
+    <section id="validacao">
+      <h2>Operação atual</h2>
+      <p class="section-lede">O pipeline concluiu as 11 etapas, com validação remota e auditoria Athena aprovadas.</p>
+      <div class="validation">
+        <span><strong>Validação remota</strong> 6/6</span>
+        <span><strong>Auditoria Athena</strong> 6/6</span>
+        <span><strong>Bronze / Silver / Gold</strong> 100 / 2 / 2</span>
+        <span><strong>Quarentena</strong> 98 rejeitados</span>
+      </div>
+      <p>Bronze contém 100 pedidos. Silver e Gold somam `50.121,36`; 98 registros foram rejeitados e contabilizados na Quarentena.</p>
+    </section>
+
+    <footer>
+      Data Lake MBA · Arquitetura atualizada em 2026-11-01.
+    </footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Credenciais e configuracoes locais
+.env
+AWS_CREDENTIAL
+AWS_CREDENTIAL.env
+
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Cache e artefatos Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Dados gerados localmente
+datalake/Dados/clientes.json
+datalake/Dados/pedidos.csv
+datalake/Dados/produtos.csv
+datalake/Dados/orders.csv
+silver/
+gold/
+quarantine/
+processed/
+
+# Arquivos temporarios de ferramentas
+.coverage
+coverage.xml
+*.log
+*.md
+!/README.md
